@@ -1,0 +1,8 @@
+{
+  "name": "Remix: Job Portal Management System",
+  "description": "A comprehensive Job Portal application with Job Search, Candidate Applications, Employer Hiring Dashboard, AI Resume Matcher \u0026 JD Generator, and interactive DevOps Deployment Assistant.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
