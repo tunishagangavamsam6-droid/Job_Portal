@@ -46,6 +46,24 @@ export interface Application {
   notes?: string;
 }
 
+export interface InterviewSlot {
+  id: string;
+  applicationId: string;
+  applicantName: string;
+  jobTitle: string;
+  company: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  type: 'Screening' | 'Technical Round' | 'Hiring Manager' | 'Culture Fit' | 'Final Round';
+  format: 'Google Meet' | 'Phone Call' | 'In-Person' | 'Zoom';
+  interviewerName: string;
+  meetingLink?: string;
+  notes?: string;
+  status: 'Proposed' | 'Confirmed' | 'Completed' | 'Cancelled';
+  createdAt: string;
+}
+
 export interface PreFlightCheckRequest {
   frontendFramework: string;
   backendFramework: string;
@@ -57,6 +75,14 @@ export interface PreFlightCheckRequest {
   hasPortVar: boolean;
   sameSiteCookie: 'Strict' | 'Lax' | 'None';
   caseSensitivityVerified: boolean;
+}
+
+export interface UserProfile {
+  uid: string;
+  displayName: string;
+  email: string;
+  photoURL?: string;
+  role: 'candidate' | 'employer';
 }
 
 export interface CheckItem {

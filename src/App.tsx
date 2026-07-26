@@ -7,13 +7,18 @@ import { DevOpsDeploymentSuite } from './components/DevOpsDeploymentSuite';
 import { WorkspaceIntegrations } from './components/WorkspaceIntegrations';
 import { RealTimeNotificationToast } from './components/RealTimeNotificationToast';
 import { useSocket } from './hooks/useSocket';
-import { Job, Application, ApplicationStatus } from './types';
+import { Job, Application, ApplicationStatus, UserProfile } from './types';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'jobs' | 'employer' | 'ai-tools' | 'devops' | 'workspace'>('jobs');
   const [jobs, setJobs] = useState<Job[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [globalSearchTerm, setGlobalSearchTerm] = useState<string>('');
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(() => {
+    const saved = localStorage.getItem('hiresphere_user_account');
+    return saved ? JSON.parse(saved) : null;
+  });
 
   // Initialize Real-Time WebSocket Hook
   const {
@@ -128,6 +133,11 @@ export default function App() {
         setActiveTab={setActiveTab}
         appliedCount={applications.length}
         activeJobsCount={jobs.length}
+        userProfile={userProfile}
+        setUserProfile={setUserProfile}
+        searchTerm={globalSearchTerm}
+        setSearchTerm={setGlobalSearchTerm}
+        jobs={jobs}
       />
 
       <main className="flex-1">
@@ -145,6 +155,8 @@ export default function App() {
                 jobs={jobs}
                 onApplySubmit={handleApplySubmit}
                 appliedJobIds={appliedJobIds}
+                searchTerm={globalSearchTerm}
+                setSearchTerm={setGlobalSearchTerm}
               />
             )}
 

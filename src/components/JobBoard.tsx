@@ -6,10 +6,27 @@ interface JobBoardProps {
   jobs: Job[];
   onApplySubmit: (applicationData: Partial<Application>) => Promise<void>;
   appliedJobIds: string[];
+  searchTerm?: string;
+  setSearchTerm?: (term: string) => void;
 }
 
-export const JobBoard: React.FC<JobBoardProps> = ({ jobs, onApplySubmit, appliedJobIds }) => {
-  const [searchTerm, setSearchTerm] = useState('');
+export const JobBoard: React.FC<JobBoardProps> = ({
+  jobs,
+  onApplySubmit,
+  appliedJobIds,
+  searchTerm: externalSearchTerm,
+  setSearchTerm: externalSetSearchTerm
+}) => {
+  const [internalSearchTerm, setInternalSearchTerm] = useState('');
+  const activeSearchTerm = externalSearchTerm !== undefined ? externalSearchTerm : internalSearchTerm;
+
+  const handleSearchChange = (val: string) => {
+    if (externalSetSearchTerm) {
+      externalSetSearchTerm(val);
+    }
+    setInternalSearchTerm(val);
+  };
+
   const [typeFilter, setTypeFilter] = useState('All');
   const [levelFilter, setLevelFilter] = useState('All');
   const [departmentFilter, setDepartmentFilter] = useState('All');
@@ -30,12 +47,12 @@ export const JobBoard: React.FC<JobBoardProps> = ({ jobs, onApplySubmit, applied
   // Filter jobs logic
   const filteredJobs = jobs.filter((j) => {
     const matchesSearch =
-      searchTerm === '' ||
-      j.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      j.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      j.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      j.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      j.tags.some((t) => t.toLowerCase().includes(searchTerm.toLowerCase()));
+      !activeSearchTerm.trim() ||
+      j.title.toLowerCase().includes(activeSearchTerm.toLowerCase()) ||
+      j.company.toLowerCase().includes(activeSearchTerm.toLowerCase()) ||
+      j.location.toLowerCase().includes(activeSearchTerm.toLowerCase()) ||
+      j.description.toLowerCase().includes(activeSearchTerm.toLowerCase()) ||
+      j.tags.some((t) => t.toLowerCase().includes(activeSearchTerm.toLowerCase()));
 
     const matchesType = typeFilter === 'All' || j.type === typeFilter;
     const matchesLevel = levelFilter === 'All' || j.experienceLevel === levelFilter;
@@ -111,12 +128,12 @@ export const JobBoard: React.FC<JobBoardProps> = ({ jobs, onApplySubmit, applied
               id="job-search-input"
               type="text"
               placeholder="Search by title, skill (React, Docker, MongoDB), or company..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              value={activeSearchTerm}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="bg-transparent text-white placeholder-slate-400 text-sm focus:outline-none w-full"
             />
-            {searchTerm && (
-              <button onClick={() => setSearchTerm('')} className="text-slate-400 hover:text-white">
+            {activeSearchTerm && (
+              <button onClick={() => handleSearchChange('')} className="text-slate-400 hover:text-white" title="Clear search">
                 <X className="w-4 h-4" />
               </button>
             )}
@@ -177,10 +194,10 @@ export const JobBoard: React.FC<JobBoardProps> = ({ jobs, onApplySubmit, applied
                 {filteredJobs.length}
               </span>
             </h2>
-            {(typeFilter !== 'All' || levelFilter !== 'All' || departmentFilter !== 'All' || searchTerm !== '') && (
+            {(typeFilter !== 'All' || levelFilter !== 'All' || departmentFilter !== 'All' || activeSearchTerm !== '') && (
               <button
                 onClick={() => {
-                  setSearchTerm('');
+                  handleSearchChange('');
                   setTypeFilter('All');
                   setLevelFilter('All');
                   setDepartmentFilter('All');
@@ -368,7 +385,7 @@ export const JobBoard: React.FC<JobBoardProps> = ({ jobs, onApplySubmit, applied
                   {['React 19', 'Next.js App Router', 'Node.js Express', 'MongoDB Atlas', 'Docker Compose', 'Vercel Deploy', 'Render/Railway', 'CORS Security', 'JWT Auth'].map((stack) => (
                     <span
                       key={stack}
-                      onClick={() => setSearchTerm(stack.split(' ')[0])}
+                      onClick={() => handleSearchChange(stack.split(' ')[0])}
                       className="cursor-pointer bg-slate-100 hover:bg-indigo-100 hover:text-indigo-700 text-slate-700 text-xs px-2.5 py-1 rounded-md font-medium transition-colors"
                     >
                       {stack}

@@ -14,6 +14,31 @@ let applicationsStore: Application[] = [...INITIAL_APPLICATIONS];
 // In-memory comment/discussion store per application
 const commentsStore: Record<string, Array<{ id: string; author: string; role: string; text: string; createdAt: string }>> = {};
 
+// In-memory interviews store per application
+const interviewsStore: Record<string, Array<any>> = {};
+if (INITIAL_APPLICATIONS.length > 0) {
+  const sampleApp = INITIAL_APPLICATIONS[0];
+  interviewsStore[sampleApp.id] = [
+    {
+      id: 'int-sample-1',
+      applicationId: sampleApp.id,
+      applicantName: sampleApp.applicantName,
+      jobTitle: sampleApp.jobTitle,
+      company: sampleApp.company,
+      date: new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0],
+      startTime: '14:00',
+      endTime: '14:45',
+      type: 'Technical Round',
+      format: 'Google Meet',
+      interviewerName: 'Sarah Jenkins (Lead Architect)',
+      meetingLink: 'https://meet.google.com/abc-defg-hij',
+      notes: 'Initial technical deep dive & system architecture review.',
+      status: 'Proposed',
+      createdAt: new Date().toISOString()
+    }
+  ];
+}
+
 async function startServer() {
   const app = express();
   const httpServer = http.createServer(app);
@@ -345,6 +370,92 @@ Calculate a match score from 0 to 100 and evaluate key strengths, missing skills
     });
 
     res.status(201).json(commentObj);
+  });
+
+  // Interview Calendar API Endpoints
+  app.get('/api/applications/:id/interviews', (req, res) => {
+    const list = interviewsStore[req.params.id] || [];
+    res.json(list);
+  });
+
+  app.post('/api/applications/:id/interviews', (req, res) => {
+    const {
+      date,
+      startTime,
+      endTime,
+      type,
+      format,
+      interviewerName,
+      meetingLink,
+      notes,
+      applicantName,
+      jobTitle,
+      company
+    } = req.body;
+
+    if (!date || !startTime) {
+      return res.status(400).json({ error: 'Interview date and start time are required.' });
+    }
+
+    const appItem = applicationsStore.find((a) => a.id === req.params.id);
+
+    const newSlot = {
+      id: `int-${Date.now()}`,
+      applicationId: req.params.id,
+      applicantName: appItem?.applicantName || applicantName || 'Candidate',
+      jobTitle: appItem?.jobTitle || jobTitle || 'Position',
+      company: appItem?.company || company || 'HireSphere Company',
+      date,
+      startTime: startTime || '10:00',
+      endTime: endTime || '10:45',
+      type: type || 'Technical Round',
+      format: format || 'Google Meet',
+      interviewerName: interviewerName || 'Recruitment Team',
+      meetingLink: meetingLink || (format === 'Google Meet' ? `https://meet.google.com/hs-${Math.random().toString(36).substring(2, 7)}` : ''),
+      notes: notes || '',
+      status: 'Proposed',
+      createdAt: new Date().toISOString()
+    };
+
+    if (!interviewsStore[req.params.id]) {
+      interviewsStore[req.params.id] = [];
+    }
+    interviewsStore[req.params.id].push(newSlot);
+
+    // Automatically update application status to 'Interview'
+    if (appItem && (appItem.status === 'Applied' || appItem.status === 'Reviewing')) {
+      appItem.status = 'Interview';
+      io.emit('STATUS_UPDATED', {
+        application: appItem,
+        previousStatus: 'Reviewing',
+        newStatus: 'Interview',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Broadcast live INTERVIEW_SCHEDULED event
+    io.emit('INTERVIEW_SCHEDULED', {
+      applicationId: req.params.id,
+      interview: newSlot,
+      timestamp: new Date().toISOString()
+    });
+
+    res.status(201).json(newSlot);
+  });
+
+  app.delete('/api/applications/:id/interviews/:interviewId', (req, res) => {
+    const list = interviewsStore[req.params.id] || [];
+    interviewsStore[req.params.id] = list.filter((i) => i.id !== req.params.interviewId);
+    res.json({ success: true });
+  });
+
+  app.get('/api/interviews/calendar', (req, res) => {
+    const allSlots: any[] = [];
+    Object.values(interviewsStore).forEach((slots) => {
+      allSlots.push(...slots);
+    });
+    allSlots.sort((a, b) => (a.date + a.startTime).localeCompare(b.date + b.startTime));
+    res.json(allSlots);
   });
 
   // AI Feature: Resume Matching endpoint
